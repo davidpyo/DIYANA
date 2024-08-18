@@ -28,8 +28,6 @@
 #define SPINUP_DELAY        100  //time in MS to wait from idle to firing aka min delay
 #define BATTERY_OFFSET      0.0  //fixing resistor inaccuracy
 #define OLED_ADDR           0x3C
-#define DWELL               200  //time to keep revving
-#define RAMP_DOWN           200  //time to slowly stop revving
 #define IDLE_THROTTLE       20
 //select fire defitions 
 #define MODE_SINGLE 0 
@@ -52,7 +50,7 @@ long flywheelTimer;
 bool isRevving = false;
 byte minSpinupDelay = 50;
 byte maxSpinupDelay = 100;
-byte revDownTime = 100;
+int revDownTime = 1000;
 byte rofDelay = 0;
 byte retractionTime = NOID_OFF_TIME + rofDelay;
 byte flywheelThrottle = 100;
@@ -64,7 +62,8 @@ float battVoltage;
 long displayTimer;
 bool enterMenu = false;
 bool isBurst = false;
-
+bool isDwell = false;
+int dwellTime = 500;
 
 
 // Declare and Instantiate Bounce objects
@@ -86,7 +85,8 @@ void solenoidHandle(){
         solenoidTimer = millis();
         if (shotToFire == 0) { //done firing
           isFiring = false;
-          flywheelTimer = millis(); // setup flywheel Timer once for rev down
+          isDwell = true;
+          flywheelTimer = millis(); // setup flywheel Timer once for dwell
         } 
       }
     } 
@@ -117,13 +117,26 @@ void flywheelHandle(){
       }
     }
   } else { //no shots queued
-    //case: flywheel not spinning
-    if(millis() - flywheelTimer >= revDownTime){
-      isRevving = false;
-      currFlywheelThrottle = minFlywheelThrottle;
-    } else { 
-    //case: start flywheel rev down
-      currFlywheelThrottle = map(millis() - flywheelTimer, 0, revDownTime,minFlywheelThrottle,flywheelThrottle);
+    if(isDwell) {
+      //case: shot done, dwell for a time
+      if(millis() - flywheelTimer >= dwellTime){
+        isDwell = false;
+        flywheelTimer = millis();
+      }
+    } else {
+      //case: flywheel not spinning
+      if(millis() - flywheelTimer >= revDownTime){
+        //Serial.println("flywheel not spinning");
+        isRevving = false;
+        currFlywheelThrottle = minFlywheelThrottle;
+        ESC.write(currFlywheelThrottle);
+      } else { 
+      //case: start flywheel rev down
+        Serial.println("flywheel spin down");
+        currFlywheelThrottle = map(millis() - flywheelTimer, revDownTime, 0,minFlywheelThrottle,flywheelThrottle);
+        ESC.write(currFlywheelThrottle);
+        Serial.println(currFlywheelThrottle);
+      }
     }
   }
 }
