@@ -36,6 +36,14 @@
 
 //menu definitions
 #define FIRING 0
+#define BURST 1
+#define IDLE 2
+#define MINSPINUP 3
+#define MAXSPINUP 4
+#define THROTTLE 5
+#define ROFDELAY 6
+#define EXIT 7
+
 
 
 
@@ -52,7 +60,7 @@ byte minSpinupDelay = 50;
 byte maxSpinupDelay = 100;
 int revDownTime = 1000;
 byte rofDelay = 0;
-byte retractionTime = NOID_OFF_TIME + rofDelay;
+byte retractionTime = NOID_OFF_TIME;
 byte flywheelThrottle = 100;
 byte currFlywheelThrottle = 0;
 byte minFlywheelThrottle = 0;
@@ -132,10 +140,8 @@ void flywheelHandle(){
         ESC.write(currFlywheelThrottle);
       } else { 
       //case: start flywheel rev down
-        Serial.println("flywheel spin down");
         currFlywheelThrottle = map(millis() - flywheelTimer, revDownTime, 0,minFlywheelThrottle,flywheelThrottle);
         ESC.write(currFlywheelThrottle);
-        Serial.println(currFlywheelThrottle);
       }
     }
   }
@@ -239,9 +245,9 @@ void setup() {
   updateDisplay();
   displayTimer = millis(); 
   ESC.write(180);
-  delay(3000);
+  delay(200);
   ESC.write(0);
-  delay(3000);
+  delay(200);
 }
 
 void loop() {
